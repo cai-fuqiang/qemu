@@ -280,9 +280,8 @@ static void dirtylimit_set_throttle(CPUState *cpu,
                                     uint64_t current)
 {
     int64_t ring_full_time_us = 0;
-    /* the change value of sleep_pct for this adjustment */
-    uint64_t sleep_pct = 0;
-    uint64_t throttle_us = 0;
+    double adjust_pct = 0;
+    int64_t throttle_us = 0;
     /* proportion of sleep time to total time. */
     uint64_t sleep_pct_per_full = 0;
     int64_t throttle_us_per_full_old = cpu->throttle_us_per_full;
@@ -295,17 +294,9 @@ static void dirtylimit_set_throttle(CPUState *cpu,
     ring_full_time_us = dirtylimit_dirty_ring_full_time(current);
 
     if (dirtylimit_need_linear_adjustment(quota, current)) {
-        if (quota < current) {
-            sleep_pct = (current - quota) * 100 / current;
-            throttle_us =
-                ring_full_time_us * sleep_pct / (double)(100 - sleep_pct);
-            cpu->throttle_us_per_full += throttle_us;
-        } else {
-            sleep_pct = (quota - current) * 100 / quota;
-            throttle_us =
-                ring_full_time_us * sleep_pct / (double)(100 - sleep_pct);
-            cpu->throttle_us_per_full -= throttle_us;
-        }
+        adjust_pct = (current - quota) / (double)quota;
+        throttle_us = ring_full_time_us * adjust_pct;
+        cpu->throttle_us_per_full += throttle_us;
     } else {
         if (quota < current) {
             cpu->throttle_us_per_full += ring_full_time_us / 10;
