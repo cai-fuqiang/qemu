@@ -311,7 +311,8 @@ static void dirtylimit_set_throttle(CPUState *cpu,
 
         trace_dirtylimit_throttle_pct(cpu->cpu_index,
                                       sleep_pct_per_full,
-                                      throttle_us);
+                                      quota < current ?
+                                      throttle_us : -throttle_us);
     } else {
         if (quota < current) {
             cpu->throttle_us_per_full += ring_full_time_us / 10;
